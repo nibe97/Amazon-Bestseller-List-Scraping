@@ -1,0 +1,49 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from bs4 import BeautifulSoup
+import pandas as pd
+
+def scrape_page(url):
+    driver.get(url)
+    wait = WebDriverWait(driver, 30)
+    wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div._cDEzb_iveVideoWrapper_JJ34T')))
+
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+    products = soup.select('div._cDEzb_iveVideoWrapper_JJ34T')
+
+    print(f"Anzahl gefundener Produkte auf dieser Seite: {len(products)}")
+
+    for product in products:
+        rank = product.select_one('.zg-bdg-text').get_text(strip=True) if product.select_one('.zg-bdg-text') else 'No rank'
+        title = product.select_one('div._cDEzb_p13n-sc-css-line-clamp-3_g3dy1').get_text(strip=True) if product.select_one('div._cDEzb_p13n-sc-css-line-clamp-3_g3dy1') else 'No title'
+        rating = product.select_one('.a-icon-alt').get_text(strip=True) if product.select_one('.a-icon-alt') else 'No rating'
+        reviews = product.select_one('.a-size-small').get_text(strip=True) if product.select_one('.a-size-small') else 'No reviews'
+        price = product.select_one('span._cDEzb_p13n-sc-price_3mJ9Z').get_text(strip=True) if product.select_one('span._cDEzb_p13n-sc-price_3mJ9Z') else 'No price'
+        
+        product_info = [rank, title, rating, reviews, price]
+        products_data.append(product_info)
+
+        print(f"Extrahierte Informationen für Produkt: {product_info}")
+
+driver = webdriver.Chrome()
+
+products_data = []
+
+base_url = 'https://www.amazon.de/gp/bestsellers/ce-de/17303695031/ref=zg_bs_pg_1_ce-de?ie=UTF8&pg='
+
+for page_num in range(1, 3):
+    url = base_url + str(page_num)
+    scrape_page(url)
+
+print(f"Gesammelte Daten: {products_data}")
+
+df = pd.DataFrame(products_data, columns=['Rank', 'Title', 'Rating', 'Reviews', 'Price'])
+
+print(df)
+
+df.to_csv('amazon_bestsellers.csv', index=False)
+
+driver.quit()
